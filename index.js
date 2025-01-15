@@ -12,7 +12,6 @@ app.use(cors())
 app.use(morgan('dev'))
 
 
-
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pw1gp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -31,11 +30,13 @@ async function run() {
         // await client.connect();
 
         // db collections
-        
+        const employeeCollection = client.db('assetwiseDB').collection('employee')
+        const hrCollection = client.db('assetwiseDB').collection('hr')
 
 
 
-        // jwt related api
+
+        // jwt related apis
         app.post('/jwt', async (req, res) => {
             const user = req.body;
             // console.log(user)
@@ -44,7 +45,7 @@ async function run() {
             res.send({ token })
         });
 
-        // middlewares
+        // middlewaress
         const verifyToken = (req, res, next) => {
             console.log('inside verifyToken middleware', req.headers.authorization)
 
@@ -75,6 +76,31 @@ async function run() {
         };
 
 
+        // save employee to db
+        app.post('/employee', async (req, res) => {
+            const employeeInfo = req.body;
+            const query = { email: employeeInfo?.email }
+
+            const ifExists = await employeeCollection.findOne(query);
+            if (ifExists) {
+                // return res.status(403).send({ message: 'Employee already exists!', insertedId: null })
+                return;
+            }
+            const result = await employeeCollection.insertOne(employeeInfo);
+            res.send(result)
+        });
+
+        // save hr to db
+        app.post('/hr', async (req, res) => {
+            const hrInfo = req.body;
+            const query = { email: hrInfo?.email };
+            const ifExists = await hrCollection.findOne(query);
+            if (ifExists) {
+                return res.status(403).send({ message: 'Already exists!', insertedId: null })
+            }
+            const result = await hrCollection.insertOne(hrInfo);
+            res.send(result);
+        });
 
 
 
