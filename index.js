@@ -101,6 +101,9 @@ async function run() {
             const result = await hrCollection.insertOne(hrInfo);
             res.send(result);
         });
+        app.post('f', async(req, res)=> {
+
+        });
 
 
 
