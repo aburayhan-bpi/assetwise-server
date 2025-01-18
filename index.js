@@ -1,18 +1,30 @@
 const express = require('express')
+require('dotenv').config()
 const app = express()
 const cors = require('cors')
 const morgan = require('morgan')
 const jwt = require('jsonwebtoken')
-require('dotenv').config()
+
 const port = process.env.PORT | 5000
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+
+
 
 // middleware
 app.use(express.json())
-app.use(cors())
+app.use(
+    cors({
+        origin: [
+            "http://localhost:5173",
+            "http://localhost:5000",
+        ],
+        credentials: true,
+    })
+);
 app.use(morgan('dev'))
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pw1gp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -30,8 +42,10 @@ async function run() {
         // await client.connect();
 
         // db collections
-        const employeeCollection = client.db('assetwiseDB').collection('employee')
-        const hrCollection = client.db('assetwiseDB').collection('hr')
+        const usersCollection = client.db('assetwiseDB').collection('users')
+        const paymentsCollection = client.db('assetwiseDB').collection('payments')
+
+
 
 
 
@@ -81,12 +95,12 @@ async function run() {
             const employeeInfo = req.body;
             const query = { email: employeeInfo?.email }
 
-            const ifExists = await employeeCollection.findOne(query);
+            const ifExists = await usersCollection.findOne(query);
             if (ifExists) {
                 // return res.status(403).send({ message: 'Employee already exists!', insertedId: null })
                 return;
             }
-            const result = await employeeCollection.insertOne(employeeInfo);
+            const result = await usersCollection.insertOne(employeeInfo);
             res.send(result)
         });
 
@@ -94,21 +108,61 @@ async function run() {
         app.post('/hr', async (req, res) => {
             const hrInfo = req.body;
             const query = { email: hrInfo?.email };
-            const ifExists = await hrCollection.findOne(query);
+            const ifExists = await usersCollection.findOne(query);
             if (ifExists) {
                 return res.status(403).send({ message: 'Already exists!', insertedId: null })
             }
-            const result = await hrCollection.insertOne(hrInfo);
+            const result = await usersCollection.insertOne(hrInfo);
             res.send(result);
         });
-        app.post('f', async(req, res)=> {
 
+        // get all users
+        app.get('/users', async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        });
+
+        // update hr user info after successfully payment
+        app.patch('/update-hr/:id', async (req, res) => {
+            const id = req.params.id;
+            const { limit } = req.body;
+            const query = { _id: new ObjectId(id) };
+            const result = await usersCollection.updateOne(
+                query,
+                { $set: { limit: limit } }
+            )
+            res.send(result)
         });
 
 
 
 
 
+        // // save employee to db
+        // app.post('/employee', async (req, res) => {
+        //     const employeeInfo = req.body;
+        //     const query = { email: employeeInfo?.email }
+
+        //     const ifExists = await employeeCollection.findOne(query);
+        //     if (ifExists) {
+        //         // return res.status(403).send({ message: 'Employee already exists!', insertedId: null })
+        //         return;
+        //     }
+        //     const result = await employeeCollection.insertOne(employeeInfo);
+        //     res.send(result)
+        // });
+
+        // // save hr to db
+        // app.post('/hr', async (req, res) => {
+        //     const hrInfo = req.body;
+        //     const query = { email: hrInfo?.email };
+        //     const ifExists = await hrCollection.findOne(query);
+        //     if (ifExists) {
+        //         return res.status(403).send({ message: 'Already exists!', insertedId: null })
+        //     }
+        //     const result = await hrCollection.insertOne(hrInfo);
+        //     res.send(result);
+        // });
 
 
 
@@ -118,6 +172,53 @@ async function run() {
 
 
 
+
+
+
+
+
+
+        // payment intent
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            console.log(amount, 'amount inside the intent');
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        });
+
+        app.post('/payment', async (req, res) => {
+            const paymentData = req.body;
+
+            try {
+
+                const query = {
+                    email: paymentData.email,
+                    limit: paymentData?.limit,
+                };
+
+                // Check if the payment data already exists
+                const existingPayment = await paymentsCollection.findOne(query);
+
+                if (existingPayment) {
+                    return res.status(400).send({ message: "Payment data already exists!" });
+                }
+
+                // Insert the new payment data
+                const result = await paymentsCollection.insertOne(paymentData);
+                res.send(result);
+            } catch (error) {
+                console.error("Error saving payment data:", error);
+                res.status(500).send({ message: "Internal server error" });
+            }
+        });
 
 
 
