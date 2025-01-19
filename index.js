@@ -44,7 +44,7 @@ async function run() {
         // db collections
         const usersCollection = client.db('assetwiseDB').collection('users')
         const paymentsCollection = client.db('assetwiseDB').collection('payments')
-
+        const assetsCollection = client.db('assetwiseDB').collection('assets')
 
 
 
@@ -117,7 +117,7 @@ async function run() {
         });
 
         // get all users
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyToken, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
@@ -132,6 +132,41 @@ async function run() {
                 { $set: { limit: limit } }
             )
             res.send(result)
+        });
+
+        // add asset api endpoint
+        app.post('/assets', verifyToken, async (req, res) => {
+            const assetData = req.body;
+            try {
+                if (assetData) {
+                    const result = await assetsCollection.insertOne(assetData);
+                    res.send(result);
+                }
+            } catch (err) {
+                console.log('Failed during asset add!')
+            }
+        });
+
+        // get / fetch all asset
+        app.get('/assets', verifyToken, async (req, res) => {
+            const result = await assetsCollection.find().toArray();
+            res.send(result)
+        });
+
+        // delete a spcecific asset by it's id
+        app.delete('/assets/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+
+            try {
+                if (id) {
+                    const result = await assetsCollection.deleteOne(query);
+                    res.send(result);
+                }
+            } catch (err) {
+                console.log('failed to delete asset')
+                return res.send({ message: 'failed to delete asset.' })
+            }
         });
 
 
