@@ -147,6 +147,23 @@ async function run() {
             }
         });
 
+        // get / fetch sngle asset data according id
+        app.get('/assets/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            try {
+                if (id) {
+                    const result = await assetsCollection.findOne(query);
+                    res.send(result)
+                }
+            } catch (err) {
+                console.log("Error fetching single asset data", err)
+                res.status(404).send({ message: 'Asset not fount.' })
+            }
+        });
+
+
+
         // get / fetch all asset
         app.get('/assets', verifyToken, async (req, res) => {
             const searchQuery = req.query?.search;
@@ -184,6 +201,43 @@ async function run() {
             }
         });
 
+
+        // update asset data
+        app.patch('/assets/:id', verifyToken, async (req, res) => {
+            const newAssetData = req.body;
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+
+            if (req.user?.email !== newAssetData.organizerEmail) {
+                return res.status(403).send({ message: 'Forbidden access' });
+            }
+            try {
+                if (newAssetData) {
+                    const updatedAssetInfo = {
+                        $set: {
+                            productName: newAssetData?.productName,
+                            productType: newAssetData?.productType,
+                            productQuantity: newAssetData?.productQuantity,
+                            dateAdded: newAssetData?.dateAdded,
+                            dateUpdated: newAssetData?.dateUpdated,
+                            email: newAssetData?.email,
+                            company: newAssetData?.company,
+                            role: newAssetData?.role,
+                        }
+                    }
+                    const result = await assetsCollection.updateOne(filter, updatedAssetInfo, options)
+                    res.send(result)
+                }
+            } catch (err) {
+                console.log('Failed to update', err)
+                res.status(400).send({ message: 'Failed to update for Bad Request' })
+            }
+
+
+
+            console.log(newAssetData)
+        })
 
 
         // delete a spcecific asset by it's id
