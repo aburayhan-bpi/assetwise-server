@@ -149,26 +149,42 @@ async function run() {
 
         // get / fetch all asset
         app.get('/assets', verifyToken, async (req, res) => {
-            const searchQuery = req.query.search;
+            const searchQuery = req.query?.search;
+            const filterOption = req.query?.filterOption;
+            const sortOption = req.query?.sortOption;
+            console.log("Query of search coming: ", searchQuery)
+            console.log("Filter option coming: ", filterOption)
+            console.log("Sort option coming: ", sortOption)
 
             let cursor;
             try {
                 if (searchQuery) {
+                    cursor = assetsCollection.find({
+                        productName: { $regex: searchQuery, $options: 'i' }
+                    })
+                } else if (filterOption) {
+                    cursor = assetsCollection.find({ productType: filterOption });
+                } else if (sortOption === 'asc') {
                     cursor = assetsCollection
-                        .find({ productName: { $regex: searchQuery, $options: 'i' } })
-                } else {
+                        .find()
+                        .sort({ productQuantity: 1 })
+                } else if (sortOption === 'desc') {
+                    cursor = assetsCollection
+                        .find()
+                        .sort({ productQuantity: -1 })
+                }
+                else {
                     cursor = assetsCollection.find();
                 }
-
-
                 const result = await cursor.toArray();
                 res.send(result)
             } catch (err) {
                 console.log(err)
-                res.status(500).send({ error: 'Failed to fetch assetssss' })
+                res.status(500).send({ error: 'Failed to fetch assets' })
             }
-
         });
+
+
 
         // delete a spcecific asset by it's id
         app.delete('/assets/:id', async (req, res) => {
