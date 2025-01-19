@@ -149,8 +149,25 @@ async function run() {
 
         // get / fetch all asset
         app.get('/assets', verifyToken, async (req, res) => {
-            const result = await assetsCollection.find().toArray();
-            res.send(result)
+            const searchQuery = req.query.search;
+
+            let cursor;
+            try {
+                if (searchQuery) {
+                    cursor = assetsCollection
+                        .find({ productName: { $regex: searchQuery, $options: 'i' } })
+                } else {
+                    cursor = assetsCollection.find();
+                }
+
+
+                const result = await cursor.toArray();
+                res.send(result)
+            } catch (err) {
+                console.log(err)
+                res.status(500).send({ error: 'Failed to fetch assetssss' })
+            }
+
         });
 
         // delete a spcecific asset by it's id
