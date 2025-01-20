@@ -45,6 +45,7 @@ async function run() {
         const usersCollection = client.db('assetwiseDB').collection('users')
         const paymentsCollection = client.db('assetwiseDB').collection('payments')
         const assetsCollection = client.db('assetwiseDB').collection('assets')
+        const teamCollection = client.db('assetwiseDB').collection('team')
 
 
 
@@ -123,13 +124,14 @@ async function run() {
         });
 
         // update hr user info after successfully payment
-        app.patch('/update-hr/:id', async (req, res) => {
+        app.patch('/update-hr/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
-            const { limit } = req.body;
+            const { limit, package } = req.body;
+            console.log('New package details', limit, package)
             const query = { _id: new ObjectId(id) };
             const result = await usersCollection.updateOne(
                 query,
-                { $set: { limit: limit } }
+                { $set: { limit: limit, package: package } }
             )
             res.send(result)
         });
@@ -163,43 +165,45 @@ async function run() {
         });
 
 
-
         // get / fetch all asset
         app.get('/assets', verifyToken, async (req, res) => {
             const searchQuery = req.query?.search;
             const filterOption = req.query?.filterOption;
             const sortOption = req.query?.sortOption;
-            console.log("Query of search coming: ", searchQuery)
-            console.log("Filter option coming: ", filterOption)
-            console.log("Sort option coming: ", sortOption)
+            const email = req.query?.email; // Get the email from the query
+
+            console.log("Search Query:", searchQuery);
+            console.log("Filter Option:", filterOption);
+            console.log("Sort Option:", sortOption);
+            console.log("Email:", email);
 
             let cursor;
+
             try {
+                const query = email ? { email } : {}; // Filter by email if provided
                 if (searchQuery) {
-                    cursor = assetsCollection.find({
-                        productName: { $regex: searchQuery, $options: 'i' }
-                    })
-                } else if (filterOption) {
-                    cursor = assetsCollection.find({ productType: filterOption });
-                } else if (sortOption === 'asc') {
-                    cursor = assetsCollection
-                        .find()
-                        .sort({ productQuantity: 1 })
+                    query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
+                }
+                if (filterOption) {
+                    query.productType = filterOption; // Add filter condition
+                }
+
+                cursor = assetsCollection.find(query);
+
+                if (sortOption === 'asc') {
+                    cursor = cursor.sort({ productQuantity: 1 });
                 } else if (sortOption === 'desc') {
-                    cursor = assetsCollection
-                        .find()
-                        .sort({ productQuantity: -1 })
+                    cursor = cursor.sort({ productQuantity: -1 });
                 }
-                else {
-                    cursor = assetsCollection.find();
-                }
+
                 const result = await cursor.toArray();
-                res.send(result)
+                res.send(result);
             } catch (err) {
-                console.log(err)
-                res.status(500).send({ error: 'Failed to fetch assets' })
+                console.error("Error fetching assets:", err);
+                res.status(500).send({ error: "Failed to fetch assets" });
             }
         });
+
 
 
         // update asset data
@@ -233,11 +237,8 @@ async function run() {
                 console.log('Failed to update', err)
                 res.status(400).send({ message: 'Failed to update for Bad Request' })
             }
-
-
-
             console.log(newAssetData)
-        })
+        });
 
 
         // delete a spcecific asset by it's id
@@ -255,6 +256,122 @@ async function run() {
                 return res.send({ message: 'failed to delete asset.' })
             }
         });
+
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+
+
+        app.post('/add-employee', async (req, res) => {
+            const { empId, email } = req.body; // HR email and Employee ID
+
+            try {
+                // Check if the HR already has a team
+                let userTeam = await teamCollection.findOne({ email });
+
+                if (!userTeam) {
+                    // Create a new team for the HR if it doesn't exist
+                    userTeam = {
+                        email: email,
+                        members: [new ObjectId(empId)],
+                    };
+                    await teamCollection.insertOne(userTeam);
+
+                    // Update the employee's affiliatedWith property in usersCollection
+                    await usersCollection.updateOne(
+                        { _id: new ObjectId(empId) },
+                        { $set: { 'affiliatedWith': email } }
+                    );
+
+                    return res.status(200).json({ success: true, message: "New team created, employee added." });
+                }
+
+                // If the HR already has a team, check if the employee is already added to the team
+                if (userTeam.members.includes(new ObjectId(empId))) {
+                    return res.status(400).json({ success: false, message: "Employee already in your team." });
+                }
+
+                // Add employee to the existing team
+                await teamCollection.updateOne(
+                    { email },
+                    { $push: { members: new ObjectId(empId) } }
+                );
+
+                // Update the employee's affiliatedWith property in usersCollection
+                await usersCollection.updateOne(
+                    { _id: new ObjectId(empId) },
+                    { $set: { 'affiliatedWith': email } }
+                );
+
+                return res.status(200).json({ success: true, message: "Employee added to your team." });
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({ success: false, message: "Server error." });
+            }
+        });
+
+        app.post('/add-selected-employees', async (req, res) => {
+            const { empIds, email } = req.body; // HR email and Employee IDs
+
+            try {
+                // Check if the HR already has a team
+                let userTeam = await teamCollection.findOne({ email });
+
+                if (!userTeam) {
+                    // Create a new team for the HR if it doesn't exist
+                    userTeam = {
+                        email: email,
+                        members: empIds.map(id => new ObjectId(id)),
+                    };
+                    await teamCollection.insertOne(userTeam);
+
+                    // Update the affiliatedWith property for all selected employees in usersCollection
+                    await usersCollection.updateMany(
+                        { _id: { $in: empIds.map(id => new ObjectId(id)) } },
+                        { $set: { 'affiliatedWith': email } }
+                    );
+
+                    return res.status(200).json({ success: true, message: "New team created, employees added." });
+                }
+
+                // If the HR already has a team, add selected employees
+                const existingMembers = userTeam.members.map(member => member.toString());
+                const newMembers = empIds.filter(id => !existingMembers.includes(id));
+
+                if (newMembers.length === 0) {
+                    return res.status(400).json({ success: false, message: "All selected employees are already in your team." });
+                }
+
+                // Add the new members to the existing team
+                await teamCollection.updateOne(
+                    { email },
+                    { $push: { members: { $each: newMembers.map(id => new ObjectId(id)) } } }
+                );
+
+                // Update the affiliatedWith property for the new members in usersCollection
+                await usersCollection.updateMany(
+                    { _id: { $in: newMembers.map(id => new ObjectId(id)) } },
+                    { $set: { 'affiliatedWith': email } }
+                );
+
+                return res.status(200).json({ success: true, message: "Selected employees added to your team." });
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({ success: false, message: "Server error." });
+            }
+        });
+
+
 
 
 
@@ -316,11 +433,11 @@ async function run() {
             })
         });
 
+        // save payment info to db when account create
         app.post('/payment', async (req, res) => {
             const paymentData = req.body;
 
             try {
-
                 const query = {
                     email: paymentData.email,
                     limit: paymentData?.limit,
@@ -341,6 +458,61 @@ async function run() {
                 res.status(500).send({ message: "Internal server error" });
             }
         });
+
+        // get specific payment info by current user email
+        app.get('/payment/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await paymentsCollection.findOne(query);
+            res.send(result);
+        });
+
+        // update payment info after package update
+        app.patch('/update-payment/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const paymentData = req.body;
+            const filter = { _id: new ObjectId(id) };
+            try {
+                const query = {
+                    email: paymentData?.email,
+                    limit: paymentData?.limit,
+                }
+
+                // check if the payment data or package already selected
+                const existingPayment = await paymentsCollection.findOne(query);
+
+                if (existingPayment) {
+                    return res.status(400).send({ message: 'Payment or Package already exists!' })
+                }
+
+                // update payment info
+
+                if (paymentData) {
+                    const updatedPaymentInfo = {
+                        $set: {
+                            email: paymentData?.email,
+                            companyName: paymentData?.companyName,
+                            name: paymentData?.name,
+                            role: paymentData?.role,
+                            package: paymentData?.package,
+                            transactionId: paymentData?.transactionId,
+                            date: paymentData?.date,
+                            status: paymentData?.status,
+                            limit: paymentData?.limit,
+                        }
+                    }
+                    const result = await paymentsCollection.updateOne(filter, updatedPaymentInfo)
+                    res.send(result);
+                }
+
+
+
+
+
+            } catch (err) {
+                console.log('failed to update paymetn info', err)
+            }
+        })
 
 
 
