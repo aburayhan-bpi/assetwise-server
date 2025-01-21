@@ -415,9 +415,9 @@ async function run() {
                         { email: email },
                         { $pull: { members: memberIdToRemove } }
                     );
-                    console.log('emp user', updatedTeamMember);
+                    // console.log('emp user', updatedTeamMember);
                 }
-                console.log('team user', updatedEmployee);
+                // console.log('team user', updatedEmployee);
 
                 // Check for successful updates (at least one collection modified)
                 if (updatedEmployee.modifiedCount === 1 || (email && updatedTeamMember.modifiedCount === 1)) {
