@@ -55,7 +55,7 @@ async function run() {
         app.post('/jwt', async (req, res) => {
             const user = req.body;
             // console.log(user)
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '4h' });
             // console.log(token)
             res.send({ token })
         });
@@ -368,6 +368,66 @@ async function run() {
             } catch (error) {
                 console.error(error);
                 return res.status(500).json({ success: false, message: "Server error." });
+            }
+        });
+
+        // get all team members info according to logged in HR
+        app.get('/team/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+
+            try {
+                if (email) {
+                    const result = await teamCollection.findOne(query);
+                    console.log(result)
+
+                    // find these user who are employe
+                    const employees = await usersCollection.find({ role: 'employee' }).toArray()
+                    // console.log(employees)
+                    // find out affiliatedWith the current hr email and return to client side
+                    const team = employees.filter((singleEmp) => singleEmp?.affiliatedWith === email)
+                    console.log('team', team)
+                    res.send(team);
+                }
+            } catch (err) {
+                console.log('Team not fount according email')
+                res.status(404).send({ message: 'Team not found with current hr email' });
+            }
+        });
+
+
+        // delete a team member
+        app.delete('/delete-team-member/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const email = req.query.email;
+            const filter = { _id: new ObjectId(id) };
+
+            try {
+                // Update the user document (remove affiliatedWith)
+                const updatedEmployee = await usersCollection.updateOne(
+                    filter,
+                    { $unset: { 'affiliatedWith': 1 } }
+                );
+
+                if (email) {
+                    const memberIdToRemove = new ObjectId(id);
+                    const updatedTeamMember = await teamCollection.updateOne(
+                        { email: email },
+                        { $pull: { members: memberIdToRemove } }
+                    );
+                    console.log('emp user', updatedTeamMember);
+                }
+                console.log('team user', updatedEmployee);
+
+                // Check for successful updates (at least one collection modified)
+                if (updatedEmployee.modifiedCount === 1 || (email && updatedTeamMember.modifiedCount === 1)) {
+                    res.status(200).json({ message: 'Team member deleted successfully' });
+                } else {
+                    res.status(400).json({ message: 'Failed to delete team member' });
+                }
+            } catch (error) {
+                console.error('Error deleting team member:', error);
+                res.status(500).json({ message: 'Server error occurred' });
             }
         });
 
