@@ -105,6 +105,14 @@ async function run() {
             res.send(result)
         });
 
+        // get current user
+        app.get('/current-user', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const result = await usersCollection.findOne(query);
+            res.send(result)
+        });
+
         // save hr to db
         app.post('/hr', async (req, res) => {
             const hrInfo = req.body;
@@ -184,9 +192,20 @@ async function run() {
                 if (searchQuery) {
                     query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
                 }
-                if (filterOption) {
+
+                if (filterOption === 'available') {
+                    query.productQuantity = { $gt: 0 }; // Products with quantity greater than 0
+                } else if (filterOption === 'stock-out') {
+                    query.productQuantity = 0; // Products with quantity greater than 0
+                } else if (filterOption) {
                     query.productType = filterOption; // Add filter condition
                 }
+
+
+                // if (available === 'true') {
+                // } else if (stockout === 'true') {
+                //     query.productQuantity = 0; // Products with quantity equal to 0
+                // }
 
                 cursor = assetsCollection.find(query);
 
@@ -196,6 +215,7 @@ async function run() {
                     cursor = cursor.sort({ productQuantity: -1 });
                 }
 
+
                 const result = await cursor.toArray();
                 res.send(result);
             } catch (err) {
@@ -203,7 +223,6 @@ async function run() {
                 res.status(500).send({ error: "Failed to fetch assets" });
             }
         });
-
 
 
         // update asset data
@@ -395,6 +414,21 @@ async function run() {
             }
         });
 
+        // get company info or logo for affiliatedWith employe
+        app.get('/company-info', verifyToken, async (req, res) => {
+            const email = req.query.email;
+            console.log(email)
+
+            try {
+                const leader = await usersCollection.findOne({ email: email })
+                const teamPhoto = leader?.companyPhoto
+                // console.log(teamPhoto)
+                res.send(teamPhoto)
+            } catch (err) {
+                console.log("error while fetching company info", err)
+            }
+
+        })
 
         // delete a team member
         app.delete('/delete-team-member/:id', verifyToken, async (req, res) => {
@@ -428,6 +462,28 @@ async function run() {
             } catch (error) {
                 console.error('Error deleting team member:', error);
                 res.status(500).json({ message: 'Server error occurred' });
+            }
+        });
+
+        // fetch my team members for an employee who have affiliaed with anycompany
+        app.get('/my-team', verifyToken, async (req, res) => {
+            // const employeeId = req.params.id;
+            const teamEmail = req.query.teamEmail;
+            if (!teamEmail) {
+                res.status(404).send({ message: 'Team Email are required' })
+            }
+            try {
+                const myTeam = await usersCollection.find({ affiliatedWith: teamEmail }).toArray();
+
+                if (!myTeam) {
+                    return res.status(404).send({ message: "No team found!" });
+                }
+                console.log('my team', myTeam)
+                res.send(myTeam);
+
+            } catch (err) {
+                console.error("Error fetching team:", err);
+                res.status(500).send({ message: "Failed to fetch team information" });
             }
         });
 
