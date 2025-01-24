@@ -46,6 +46,7 @@ async function run() {
         const paymentsCollection = client.db('assetwiseDB').collection('payments')
         const assetsCollection = client.db('assetwiseDB').collection('assets')
         const teamCollection = client.db('assetwiseDB').collection('team')
+        const requestedAssetCollection = client.db('assetwiseDB').collection('requestedAssets')
 
 
 
@@ -484,6 +485,78 @@ async function run() {
             } catch (err) {
                 console.error("Error fetching team:", err);
                 res.status(500).send({ message: "Failed to fetch team information" });
+            }
+        });
+
+        // get my hr assets
+        app.get('/my-hr-assets', verifyToken, async (req, res) => {
+            const searchQuery = req.query?.search;
+            const filterOption = req.query?.filterOption;
+            const email = req.query.email; // Get the email from the query
+
+            console.log("Search Query:", searchQuery);
+            console.log("Filter Option:", filterOption);
+            console.log("Email:", email);
+
+            let cursor;
+            try {
+                const query = email ? { email } : {}; // Filter by email if provided
+                if (searchQuery) {
+                    query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
+                }
+
+                if (filterOption === 'available') {
+                    query.productQuantity = { $gt: 0 }; // Products with quantity greater than 0
+                } else if (filterOption === 'stock-out') {
+                    query.productQuantity = 0; // Products with quantity greater than 0
+                } else if (filterOption) {
+                    query.productType = filterOption; // Add filter condition
+                }
+
+                cursor = assetsCollection.find(query);
+
+                const result = await cursor.toArray();
+                res.send(result);
+            } catch (err) {
+                console.error("Error fetching assets:", err);
+                res.status(500).send({ error: "Failed to fetch assets" });
+            }
+
+            // const result = await assetsCollection.find({ email: email }).toArray()
+            // res.send(result)
+        });
+
+        // request for an asset - (For AffiliatedWith Employees)
+        app.post('/request-asset/:email', verifyToken, async (req, res) => {
+            const requestedEmployee = req.params.email;
+            const requestedAssetData = req.body;
+
+            try {
+                if (requestedEmployee && requestedAssetData) {
+                    const result = await requestedAssetCollection.insertOne(requestedAssetData);
+                    res.send(result);
+                }
+            } catch (err) {
+                console.log(err)
+                res.status(400).send({ message: 'Failed to add requested asset!' })
+            }
+        });
+
+
+        // fetch / get my requested assets data ---> affiliatedWith Employee
+        app.get('/my-req-assets', verifyToken, async (req, res) => {
+            const email = req.query.email;
+            const query = {
+                requesterEmail: email
+            };
+            try {
+                if (email) {
+                    const result = await requestedAssetCollection.find(query).toArray();
+                    res.send(result);
+                }
+            } catch (err) {
+                console.log(err)
+                res.status(404).send({ message: 'Requested assets not found.' })
             }
         });
 
