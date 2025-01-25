@@ -545,20 +545,121 @@ async function run() {
 
         // fetch / get my requested assets data ---> affiliatedWith Employee
         app.get('/my-req-assets', verifyToken, async (req, res) => {
-            const email = req.query.email;
-            const query = {
-                requesterEmail: email
-            };
+            const searchQuery = req.query?.search;
+            const filterOption = req.query?.filterOption;
+            const email = req.query.email; // Get the email from the query
+
+            console.log("Search Query:", searchQuery);
+            console.log("Filter Option:", filterOption);
+            console.log("Email:", email);
+
+            let cursor;
             try {
-                if (email) {
-                    const result = await requestedAssetCollection.find(query).toArray();
-                    res.send(result);
+                const query = email ? { requestedEmail: email } : {}; // Filter by email if provided
+                if (searchQuery) {
+                    query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
                 }
+
+                if (filterOption === 'pending') {
+                    query.status = 'pending';
+                } else if (filterOption === 'approved') {
+                    query.status = 'approved';
+                } else if (filterOption) {
+                    query.productType = filterOption;
+                }
+
+                cursor = requestedAssetCollection.find(query);
+
+                const result = await cursor.toArray();
+                res.send(result);
             } catch (err) {
-                console.log(err)
-                res.status(404).send({ message: 'Requested assets not found.' })
+                console.error("Error fetching assets:", err);
+                res.status(500).send({ error: "Failed to fetch assets" });
+            }
+
+            // const result = await assetsCollection.find({ email: email }).toArray()
+            // res.send(result)
+        });
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+        // 
+
+        // app.get('/all-requests', verifyToken, async (req, res) => {
+        //     const searchQuery = req.query?.search;
+        //     const filterOption = req.query?.filterOption;
+        //     const email = req.query.email; // Get the email from the query
+
+        //     console.log("Search Query:", searchQuery);
+        //     console.log("Filter Option:", filterOption);
+        //     console.log("Email:", email);
+
+        //     let cursor;
+        //     try {
+        //         const query = email ? { requestedEmail: email } : {}; // Filter by email if provided
+        //         if (searchQuery) {
+        //             query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
+        //         }
+
+        //         if (filterOption === 'pending') {
+        //             query.status = 'pending';
+        //         } else if (filterOption === 'approved') {
+        //             query.status = 'approved';
+        //         } else if (filterOption) {
+        //             query.productType = filterOption;
+        //         }
+
+        //         cursor = requestedAssetCollection.find(query);
+
+        //         const result = await cursor.toArray();
+        //         res.send(result);
+        //     } catch (err) {
+        //         console.error("Error fetching assets:", err);
+        //         res.status(500).send({ error: "Failed to fetch assets" });
+        //     }
+
+        //     // const result = await assetsCollection.find({ email: email }).toArray()
+        //     // res.send(result)
+        // });
+
+        // fetch hr team users all requests
+        app.get('/all-requests', verifyToken, async (req, res) => {
+            const hrEmail = req.query.email; // Email of the user requesting the data
+            const searchQuery = req.query.search; // Search term for filtering
+
+            console.log('search text', searchQuery);
+            console.log('searched email', hrEmail);
+
+            let cursor;
+            try {
+                const query = hrEmail ? { requesterAffiliatedWith: hrEmail } : {};
+
+                if (searchQuery) {
+                    // query.requesterName = { $regex: searchQuery, $options: 'i' };
+                    query.$or = [
+                        { requesterName: { $regex: searchQuery, $options: 'i' } },
+                        { requesterEmail: { $regex: searchQuery, $options: 'i' } }
+                    ]
+                }
+
+                cursor = requestedAssetCollection.find(query);
+
+
+                const result = await cursor.toArray();
+                res.send(result);
+
+
+            } catch (err) {
+                console.log(err);
+                res.status(404).send({ message: 'Requested assets not found.' });
             }
         });
+
 
 
 
