@@ -660,6 +660,28 @@ async function run() {
             }
         });
 
+        // update state of requested assets data
+        app.patch('/update-asset-status/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const status = req.query.status;
+            console.log(id, status)
+            const query = { _id: new ObjectId(id) };
+            try {
+                if (id && status) {
+                    const result = await requestedAssetCollection.updateOne(
+                        query,
+                        { $set: { status: status } }
+                    )
+                    res.send(result)
+                } else {
+                    res.status(400).send({ message: 'Something went wrong!' })
+                }
+            } catch (err) {
+                console.log(err);
+                res.status(500).send({ message: 'Failed to update asset status.' });
+            }
+        });
+
 
 
 
