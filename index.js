@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken')
 const port = process.env.PORT | 5000
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
-
+const moment = require('moment');
 
 
 // middleware
@@ -431,6 +431,14 @@ async function run() {
 
         })
 
+        // company details
+        app.get('/company-details', verifyToken, async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const result = await usersCollection.findOne(query);
+            res.send(result);
+        });
+
         // delete a team member
         app.delete('/delete-team-member/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
@@ -530,10 +538,18 @@ async function run() {
         app.post('/request-asset/:email', verifyToken, async (req, res) => {
             const requestedEmployee = req.params.email;
             const requestedAssetData = req.body;
+            const query = { _id: new ObjectId(requestedAssetData?.assetId) };
 
             try {
                 if (requestedEmployee && requestedAssetData) {
                     const result = await requestedAssetCollection.insertOne(requestedAssetData);
+                    console.log(result)
+                    if (result.acknowledged) {
+                        await assetsCollection.updateOne(
+                            query,
+                            { $inc: { productQuantity: -1 } }
+                        )
+                    }
                     res.send(result);
                 }
             } catch (err) {
@@ -580,6 +596,89 @@ async function run() {
             // const result = await assetsCollection.find({ email: email }).toArray()
             // res.send(result)
         });
+
+        // asset request cancel system api
+        app.patch('/cancel-request/:id', verifyToken, async (req, res) => {
+            const assetId = req.params.id;
+            // console.log(id)
+            const reqAssetId = req.query.reqAssetId;
+            const statusQuery = { _id: new ObjectId(reqAssetId) }
+            const queryForQuantity = { _id: new ObjectId(assetId) };
+            const currentDate = moment().format('YYYY-MM-DD');
+            try {
+                if (assetId) {
+                    const result = await requestedAssetCollection.updateOne(
+                        statusQuery,
+                        {
+                            $set: {
+                                cancelledDate: currentDate,
+                                status: 'cancelled'
+                            }
+                        }
+                    )
+
+                    // increase productQuantity by one
+                    const updateQuantity = await assetsCollection.updateOne(
+                        queryForQuantity,
+                        { $inc: { productQuantity: 1 } }
+                    )
+                    console.log('quantity updated: ', updateQuantity)
+                    if (result.acknowledged && updateQuantity.acknowledged) {
+                        res.send(result)
+                    }
+                } else {
+                    res.status(404).send({ message: 'Failed to cancel or ID is not valid.' })
+                }
+            } catch (err) {
+                console.log(err);
+                res.status(500).send({ message: 'Something went wrong while cancel asset.' });
+            }
+        });
+
+        // asset request return system api
+        app.patch('/return-request/:id', verifyToken, async (req, res) => {
+            const assetId = req.params.id;
+            // console.log(id)
+            const reqAssetId = req.query.reqAssetId;
+            const statusQuery = { _id: new ObjectId(reqAssetId) }
+            const queryForQuantity = { _id: new ObjectId(assetId) };
+            const currentDate = moment().format('YYYY-MM-DD');
+            try {
+                if (assetId) {
+                    const result = await requestedAssetCollection.updateOne(
+                        statusQuery,
+                        {
+                            $set: {
+                                returnedDate: currentDate,
+                                status: 'returned'
+                            }
+                        }
+                    )
+
+                    // increase productQuantity by one for return
+                    const updateQuantity = await assetsCollection.updateOne(
+                        queryForQuantity,
+                        { $inc: { productQuantity: 1 } }
+                    )
+                    console.log('quantity updated: ', updateQuantity)
+                    if (result.acknowledged && updateQuantity.acknowledged) {
+                        res.send(result)
+                    }
+                } else {
+                    res.status(404).send({ message: 'Failed to return or ID is not valid.' })
+                }
+            } catch (err) {
+                console.log(err);
+                res.status(500).send({ message: 'Something went wrong while return asset.' });
+            }
+        });
+
+
+
+
+
+
+
         // 
         // 
         // 
@@ -630,7 +729,7 @@ async function run() {
         // fetch hr team users all requests
         app.get('/all-requests', verifyToken, async (req, res) => {
             const hrEmail = req.query.email; // Email of the user requesting the data
-            const searchQuery = req.query.search; // Search term for filtering
+            const searchQuery = req.query.search;
 
             console.log('search text', searchQuery);
             console.log('searched email', hrEmail);
@@ -646,14 +745,10 @@ async function run() {
                         { requesterEmail: { $regex: searchQuery, $options: 'i' } }
                     ]
                 }
-
                 cursor = requestedAssetCollection.find(query);
-
 
                 const result = await cursor.toArray();
                 res.send(result);
-
-
             } catch (err) {
                 console.log(err);
                 res.status(404).send({ message: 'Requested assets not found.' });
@@ -666,11 +761,30 @@ async function run() {
             const status = req.query.status;
             console.log(id, status)
             const query = { _id: new ObjectId(id) };
+            const currentDate = moment().format('YYYY-MM-DD');
             try {
-                if (id && status) {
+                if (id && status === 'approved') {
                     const result = await requestedAssetCollection.updateOne(
                         query,
-                        { $set: { status: status } }
+                        {
+                            $set:
+                            {
+                                status: status,
+                                approvalDate: currentDate
+                            }
+                        }
+                    )
+                    res.send(result)
+                } else if (id && status === 'rejected') {
+                    const result = await requestedAssetCollection.updateOne(
+                        query,
+                        {
+                            $set:
+                            {
+                                status: status,
+                                rejectedDate: currentDate
+                            }
+                        }
                     )
                     res.send(result)
                 } else {
@@ -681,6 +795,8 @@ async function run() {
                 res.status(500).send({ message: 'Failed to update asset status.' });
             }
         });
+
+
 
 
 
