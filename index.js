@@ -110,8 +110,8 @@ async function run() {
         app.patch('/update-name/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const newName = req.query.newName;
-            console.log('user id:', id)
-            console.log('user new name:', newName)
+            // console.log('user id:', id)
+            // console.log('user new name:', newName)
             const query = { _id: new ObjectId(id) };
             try {
                 if (id && newName) {
@@ -120,14 +120,14 @@ async function run() {
                         { $set: { name: newName } }
                     )
                     if (result.acknowledged && result.modifiedCount > 0) {
-                        console.log(result)
+                        // console.log(result)
                         res.send(result);
                     }
                 } else {
                     res.status(400).send({ message: 'Failed to update name.' })
                 }
             } catch (err) {
-                console.log(err);
+                // console.log(err);
                 res.status(500).send({ message: 'Something went wrong while updating user name.' });
             }
         });
@@ -165,7 +165,7 @@ async function run() {
         app.patch('/update-hr/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const { limit, package } = req.body;
-            console.log('New package details', limit, package)
+            // console.log('New package details', limit, package)
             const query = { _id: new ObjectId(id) };
             const result = await usersCollection.updateOne(
                 query,
@@ -183,7 +183,7 @@ async function run() {
                     res.send(result);
                 }
             } catch (err) {
-                console.log('Failed during asset add!')
+                // console.log('Failed during asset add!')
             }
         });
 
@@ -197,7 +197,7 @@ async function run() {
                     res.send(result)
                 }
             } catch (err) {
-                console.log("Error fetching single asset data", err)
+                // console.log("Error fetching single asset data", err)
                 res.status(404).send({ message: 'Asset not fount.' })
             }
         });
@@ -210,10 +210,10 @@ async function run() {
             const sortOption = req.query?.sortOption;
             const email = req.query?.email; // Get the email from the query
 
-            console.log("Search Query:", searchQuery);
-            console.log("Filter Option:", filterOption);
-            console.log("Sort Option:", sortOption);
-            console.log("Email:", email);
+            // console.log("Search Query:", searchQuery);
+            // console.log("Filter Option:", filterOption);
+            // console.log("Sort Option:", sortOption);
+            // console.log("Email:", email);
 
             let cursor;
 
@@ -249,7 +249,7 @@ async function run() {
                 const result = await cursor.toArray();
                 res.send(result);
             } catch (err) {
-                console.error("Error fetching assets:", err);
+                // console.error("Error fetching assets:", err);
                 res.status(500).send({ error: "Failed to fetch assets" });
             }
         });
@@ -283,10 +283,10 @@ async function run() {
                     res.send(result)
                 }
             } catch (err) {
-                console.log('Failed to update', err)
+                // console.log('Failed to update', err)
                 res.status(400).send({ message: 'Failed to update for Bad Request' })
             }
-            console.log(newAssetData)
+            // console.log(newAssetData)
         });
 
 
@@ -301,7 +301,7 @@ async function run() {
                     res.send(result);
                 }
             } catch (err) {
-                console.log('failed to delete asset')
+                // console.log('failed to delete asset')
                 return res.send({ message: 'failed to delete asset.' })
             }
         });
@@ -429,18 +429,18 @@ async function run() {
             try {
                 if (email) {
                     const result = await teamCollection.findOne(query);
-                    console.log(result)
+                    // console.log(result)
 
                     // find these user who are employe
                     const employees = await usersCollection.find({ role: 'employee' }).toArray()
                     // console.log(employees)
                     // find out affiliatedWith the current hr email and return to client side
                     const team = employees.filter((singleEmp) => singleEmp?.affiliatedWith === email)
-                    console.log('team', team)
+                    // console.log('team', team)
                     res.send(team);
                 }
             } catch (err) {
-                console.log('Team not fount according email')
+                // console.log('Team not fount according email')
                 res.status(404).send({ message: 'Team not found with current hr email' });
             }
         });
@@ -448,7 +448,7 @@ async function run() {
         // get company info or logo for affiliatedWith employe
         app.get('/company-info', verifyToken, async (req, res) => {
             const email = req.query.email;
-            console.log(email)
+            // console.log(email)
 
             try {
                 const leader = await usersCollection.findOne({ email: email })
@@ -456,7 +456,7 @@ async function run() {
                 // console.log(teamPhoto)
                 res.send(teamPhoto)
             } catch (err) {
-                console.log("error while fetching company info", err)
+                // console.log("error while fetching company info", err)
             }
 
         })
@@ -517,11 +517,11 @@ async function run() {
                 if (!myTeam) {
                     return res.status(404).send({ message: "No team found!" });
                 }
-                console.log('my team', myTeam)
+                // console.log('my team', myTeam)
                 res.send(myTeam);
 
             } catch (err) {
-                console.error("Error fetching team:", err);
+                // console.error("Error fetching team:", err);
                 res.status(500).send({ message: "Failed to fetch team information" });
             }
         });
@@ -532,9 +532,9 @@ async function run() {
             const filterOption = req.query?.filterOption;
             const email = req.query.email; // Get the email from the query
 
-            console.log("Search Query:", searchQuery);
-            console.log("Filter Option:", filterOption);
-            console.log("Email:", email);
+            // console.log("Search Query:", searchQuery);
+            // console.log("Filter Option:", filterOption);
+            // console.log("Email:", email);
 
             let cursor;
             try {
@@ -556,7 +556,7 @@ async function run() {
                 const result = await cursor.toArray();
                 res.send(result);
             } catch (err) {
-                console.error("Error fetching assets:", err);
+                // console.error("Error fetching assets:", err);
                 res.status(500).send({ error: "Failed to fetch assets" });
             }
 
@@ -573,7 +573,7 @@ async function run() {
             try {
                 if (requestedEmployee && requestedAssetData) {
                     const result = await requestedAssetCollection.insertOne(requestedAssetData);
-                    console.log(result)
+                    // console.log(result)
                     if (result.acknowledged) {
                         await assetsCollection.updateOne(
                             query,
@@ -583,7 +583,7 @@ async function run() {
                     res.send(result);
                 }
             } catch (err) {
-                console.log(err)
+                // console.log(err)
                 res.status(400).send({ message: 'Failed to add requested asset!' })
             }
         });
@@ -595,9 +595,9 @@ async function run() {
             const filterOption = req.query?.filterOption;
             const email = req.query.email; // Get the email from the query
 
-            console.log("Search Query:", searchQuery);
-            console.log("Filter Option:", filterOption);
-            console.log("Email:", email);
+            // console.log("Search Query:", searchQuery);
+            // console.log("Filter Option:", filterOption);
+            // console.log("Email:", email);
 
             let cursor;
             try {
@@ -627,6 +627,60 @@ async function run() {
             // res.send(result)
         });
 
+        // My pending requests asset data
+        app.get('/pending-requests', async (req, res) => {
+            const empEmail = req.query.email;
+            const query = { requesterEmail: empEmail, status: 'pending' };
+            try {
+                if (empEmail) {
+                    const result = await requestedAssetCollection.find(query).toArray()
+                    // console.log(result);
+                    res.send(result);
+                } else {
+                    res.status(400).send({ message: 'Faile to fetch my pending request data or email invalid.' })
+                }
+            } catch (err) {
+                // console.log(err)
+                res.status(500).send({ message: 'Something went wrong while fetching my pending requests asset data.' })
+            }
+        });
+
+
+        // My monthly requests asset data
+        app.get('/monthly-requests', async (req, res) => {
+            const empEmail = req.query.email;
+            const query = { requesterEmail: empEmail };
+
+            // Get the current month's start date
+            const startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
+
+            // Get the current month's end date
+            const endOfMonth = moment().endOf('month').format('YYYY-MM-DD');
+
+            try {
+                if (empEmail) {
+                    const result = await requestedAssetCollection
+                        .find({
+                            $and: [
+                                query, // Match email
+                                { requestDate: { $gte: startOfMonth, $lte: endOfMonth } }, // Match current month
+                            ],
+                        })
+                        .sort({ requestDate: -1 }) // Sort by requestDate descending
+                        .toArray();
+
+                    // console.log(result);
+                    res.send(result);
+                } else {
+                    res.status(400).send({ message: 'Failed to fetch my monthly request data. Email invalid or missing.' });
+                }
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ message: 'Something went wrong while fetching my monthly request data.' });
+            }
+        });
+
+
         // asset request cancel system api
         app.patch('/cancel-request/:id', verifyToken, async (req, res) => {
             const assetId = req.params.id;
@@ -652,7 +706,7 @@ async function run() {
                         queryForQuantity,
                         { $inc: { productQuantity: 1 } }
                     )
-                    console.log('quantity updated: ', updateQuantity)
+                    // console.log('quantity updated: ', updateQuantity)
                     if (result.acknowledged && updateQuantity.acknowledged) {
                         res.send(result)
                     }
@@ -660,7 +714,7 @@ async function run() {
                     res.status(404).send({ message: 'Failed to cancel or ID is not valid.' })
                 }
             } catch (err) {
-                console.log(err);
+                // console.log(err);
                 res.status(500).send({ message: 'Something went wrong while cancel asset.' });
             }
         });
@@ -690,7 +744,7 @@ async function run() {
                         queryForQuantity,
                         { $inc: { productQuantity: 1 } }
                     )
-                    console.log('quantity updated: ', updateQuantity)
+                    // console.log('quantity updated: ', updateQuantity)
                     if (result.acknowledged && updateQuantity.acknowledged) {
                         res.send(result)
                     }
@@ -698,7 +752,7 @@ async function run() {
                     res.status(404).send({ message: 'Failed to return or ID is not valid.' })
                 }
             } catch (err) {
-                console.log(err);
+                // console.log(err);
                 res.status(500).send({ message: 'Something went wrong while return asset.' });
             }
         });
@@ -761,8 +815,8 @@ async function run() {
             const hrEmail = req.query.email; // Email of the user requesting the data
             const searchQuery = req.query.search;
 
-            console.log('search text', searchQuery);
-            console.log('searched email', hrEmail);
+            // console.log('search text', searchQuery);
+            // console.log('searched email', hrEmail);
 
             let cursor;
             try {
@@ -780,7 +834,7 @@ async function run() {
                 const result = await cursor.toArray();
                 res.send(result);
             } catch (err) {
-                console.log(err);
+                // console.log(err);
                 res.status(404).send({ message: 'Requested assets not found.' });
             }
         });
@@ -789,7 +843,7 @@ async function run() {
         app.patch('/update-asset-status/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const status = req.query.status;
-            console.log(id, status)
+            // console.log(id, status)
             const query = { _id: new ObjectId(id) };
             const currentDate = moment().format('YYYY-MM-DD');
             try {
@@ -821,9 +875,120 @@ async function run() {
                     res.status(400).send({ message: 'Something went wrong!' })
                 }
             } catch (err) {
-                console.log(err);
+                // console.log(err);
                 res.status(500).send({ message: 'Failed to update asset status.' });
             }
+        });
+
+        // fetch all requested asset data
+        app.get('/pending-assets', async (req, res) => {
+            const empEmail = req.query.email;
+            const query = { requesterAffiliatedWith: empEmail, status: 'pending' };
+            try {
+                if (empEmail) {
+                    const result = await requestedAssetCollection
+                        .find(query)
+                        .limit(5)
+                        .toArray()
+                    // console.log(result);
+                    res.send(result);
+                } else {
+                    res.status(400).send({ message: 'Faile to fetch my pending request data or email invalid.' })
+                }
+            } catch (err) {
+                // console.log(err)
+                res.status(500).send({ message: 'Something went wrong while fetching my pending requests asset data.' })
+            }
+        });
+
+        // top most requested asset data
+        app.get('/top-most-requested', async (req, res) => {
+            const hrEmail = req.query.email;
+            // console.log(hrEmail)
+            if (!hrEmail) {
+                return res.status(401).send('Unauthorized: User email is required');
+            }
+
+            const topAssets = await requestedAssetCollection.aggregate([
+                {
+                    $match: {
+                        requesterAffiliatedWith: hrEmail, // Match only requests by the authenticated user or their team
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$assetId", // group by asset ID
+                        totalRequests: { $sum: 1 }, // Count the total requests for each asset
+                        productName: { $first: "$productName" },
+                        productType: { $first: "$productType" },
+
+                    },
+                },
+                { $sort: { totalRequests: -1 } }, // Sort by most requested
+                { $limit: 4 }, // Get top 5 most requested assets
+            ]).toArray();
+
+            res.send(topAssets)
+
+        });
+
+        // limited stock assets
+        app.get('/limited-stock-assets', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email, productQuantity: { $lt: 10 } };
+            console.log('Limited stock my email:', email)
+
+            if (email) {
+                const result = await assetsCollection.find(query).toArray()
+                // console.log(result)
+                res.send(result)
+
+            } else {
+                res.status(404).send({ message: 'Email is required or something went wrong.' })
+            }
+        });
+
+        // product type state
+        app.get('/product-type-state', async (req, res) => {
+            const email = req.query.email;
+            console.log('Pi State: ', email)
+            const returnQuery = {
+                requesterAffiliatedWith: email, productType: 'returnable'
+            };
+            const nonReturnQuery = {
+                requesterAffiliatedWith: email, productType: 'non-returnable'
+            };
+            if (!email) {
+                return res.status(404).send({ message: 'Not found. Email is required' })
+            };
+            const returnableAssets = await requestedAssetCollection.find(returnQuery).toArray()
+
+            const nonReturnableAssets = await requestedAssetCollection.find(nonReturnQuery).toArray()
+            console.log('returnable items: ', returnableAssets)
+            console.log('non-returnable items: ', nonReturnableAssets)
+
+            // calculate counts
+            const returnableCount = returnableAssets.length;
+            const nonReturnableCount = nonReturnableAssets.length;
+
+            // total count of how many assets
+            const totalCount = returnableCount + nonReturnableCount;
+
+            // calculate percentage
+            const returnablePercentage = totalCount ? (returnableCount / totalCount) * 100 : 0
+            const nonReturnablePercentage = totalCount ? (nonReturnableCount / totalCount) * 100 : 0
+
+            const percentages = [
+                {
+                    title: 'returnable',
+                    percentage: returnablePercentage.toFixed(2)
+                },
+                {
+                    title: 'non-returnable',
+                    percentage: nonReturnablePercentage.toFixed(2)
+                }
+            ]
+            res.send(percentages)
         });
 
 
@@ -879,7 +1044,7 @@ async function run() {
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.body;
             const amount = parseInt(price * 100);
-            console.log(amount, 'amount inside the intent');
+            // console.log(amount, 'amount inside the intent');
 
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
@@ -968,7 +1133,7 @@ async function run() {
 
 
             } catch (err) {
-                console.log('failed to update paymetn info', err)
+                // console.log('failed to update paymetn info', err)
             }
         })
 
