@@ -620,17 +620,14 @@ async function run() {
 
         // fetch / get my requested assets data ---> affiliatedWith Employee
         app.get('/my-req-assets', verifyToken, async (req, res) => {
-            const searchQuery = req.query?.search;
-            const filterOption = req.query?.filterOption;
-            const email = req.query.email; // Get the email from the query
-
-            // console.log("Search Query:", searchQuery);
-            // console.log("Filter Option:", filterOption);
-            // console.log("Email:", email);
-
+            // const searchQuery = req.query?.search;
+            // const filterOption = req.query?.filterOption;
+            // const email = req.query.email; // Get the email from the query
+            const { email, searchQuery, filterOption } = req.query;
+            console.log(req.query)
             let cursor;
             try {
-                const query = email ? { requestedEmail: email } : {}; // Filter by email if provided
+                const query = email ? { requesterEmail: email } : {}; // Filter by email if provided
                 if (searchQuery) {
                     query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
                 }
@@ -651,9 +648,6 @@ async function run() {
                 console.error("Error fetching assets:", err);
                 res.status(500).send({ error: "Failed to fetch assets" });
             }
-
-            // const result = await assetsCollection.find({ email: email }).toArray()
-            // res.send(result)
         });
 
         // My pending requests asset data
