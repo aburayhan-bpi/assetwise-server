@@ -204,55 +204,84 @@ async function run() {
 
 
         // get / fetch all asset
+        // app.get('/assets', verifyToken, async (req, res) => {
+        //     const searchQuery = req.query?.search;
+        //     const filterOption = req.query?.filterOption;
+        //     const sortOption = req.query?.sortOption;
+        //     const email = req.query?.email; // Get the email from the query
+
+        //     let cursor;
+
+        //     try {
+        //         const query = email ? { email } : {}; // Filter by email if provided
+        //         if (searchQuery) {
+        //             query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
+        //         }
+
+        //         if (filterOption === 'available') {
+        //             query.productQuantity = { $gt: 0 }; // Products with quantity greater than 0
+        //         } else if (filterOption === 'stock-out') {
+        //             query.productQuantity = 0; // Products with quantity greater than 0
+        //         } else if (filterOption) {
+        //             query.productType = filterOption; // Add filter condition
+        //         }
+
+
+        //         // if (available === 'true') {
+        //         // } else if (stockout === 'true') {
+        //         //     query.productQuantity = 0; // Products with quantity equal to 0
+        //         // }
+
+        //         cursor = assetsCollection.find(query);
+
+        //         if (sortOption === 'asc') {
+        //             cursor = cursor.sort({ productQuantity: 1 });
+        //         } else if (sortOption === 'desc') {
+        //             cursor = cursor.sort({ productQuantity: -1 });
+        //         }
+
+
+        //         const result = await cursor.toArray();
+        //         res.send(result);
+        //     } catch (err) {
+        //         // console.error("Error fetching assets:", err);
+        //         res.status(500).send({ error: "Failed to fetch assets" });
+        //     }
+        // });
         app.get('/assets', verifyToken, async (req, res) => {
-            const searchQuery = req.query?.search;
-            const filterOption = req.query?.filterOption;
-            const sortOption = req.query?.sortOption;
-            const email = req.query?.email; // Get the email from the query
-
-            // console.log("Search Query:", searchQuery);
-            // console.log("Filter Option:", filterOption);
-            // console.log("Sort Option:", sortOption);
-            // console.log("Email:", email);
-
-            let cursor;
+            const { search, filterOption, sortOption, email } = req.query;
 
             try {
-                const query = email ? { email } : {}; // Filter by email if provided
-                if (searchQuery) {
-                    query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
+                const query = email ? { email } : {}; // Filter by email
+                if (search) {
+                    query.productName = { $regex: search, $options: 'i' }; // Search condition
                 }
-
                 if (filterOption === 'available') {
-                    query.productQuantity = { $gt: 0 }; // Products with quantity greater than 0
+                    query.productQuantity = { $gt: 0 }; // Available items
                 } else if (filterOption === 'stock-out') {
-                    query.productQuantity = 0; // Products with quantity greater than 0
+                    query.productQuantity = 0; // Stock-out items
                 } else if (filterOption) {
-                    query.productType = filterOption; // Add filter condition
+                    query.productType = filterOption; // Filter by type
                 }
 
-
-                // if (available === 'true') {
-                // } else if (stockout === 'true') {
-                //     query.productQuantity = 0; // Products with quantity equal to 0
-                // }
-
-                cursor = assetsCollection.find(query);
+                let cursor = assetsCollection.find(query);
 
                 if (sortOption === 'asc') {
-                    cursor = cursor.sort({ productQuantity: 1 });
+                    cursor = cursor.sort({ productQuantity: 1 }); // Sort ascending
                 } else if (sortOption === 'desc') {
-                    cursor = cursor.sort({ productQuantity: -1 });
+                    cursor = cursor.sort({ productQuantity: -1 }); // Sort descending
                 }
-
 
                 const result = await cursor.toArray();
                 res.send(result);
             } catch (err) {
-                // console.error("Error fetching assets:", err);
                 res.status(500).send({ error: "Failed to fetch assets" });
             }
         });
+
+
+
+
 
 
         // update asset data
@@ -812,13 +841,14 @@ async function run() {
 
         // fetch hr team users all requests
         app.get('/all-requests', verifyToken, async (req, res) => {
-            const hrEmail = req.query.email; // Email of the user requesting the data
-            const searchQuery = req.query.search;
-
+            // const hrEmail = req.query.email; // Email of the user requesting the data
+            // const searchQuery = req.query.search;
+            const { hrEmail, searchQuery } = req.query;
+            console.log('all request search query: ', searchQuery)
             // console.log('search text', searchQuery);
             // console.log('searched email', hrEmail);
 
-            let cursor;
+            // let cursor;
             try {
                 const query = hrEmail ? { requesterAffiliatedWith: hrEmail } : {};
 
@@ -829,7 +859,7 @@ async function run() {
                         { requesterEmail: { $regex: searchQuery, $options: 'i' } }
                     ]
                 }
-                cursor = requestedAssetCollection.find(query);
+                let cursor = requestedAssetCollection.find(query);
 
                 const result = await cursor.toArray();
                 res.send(result);
@@ -962,10 +992,10 @@ async function run() {
                         .sort({ productQuantity: -1 })
                         .limit(10)
                         .toArray();
-                    console.log("top quantity assets:", result)
+                    // console.log("top quantity assets:", result)
                     res.send(result);
                 } catch (error) {
-                    console.error(error);
+                    // console.error(error);
                     res.status(500).send({ message: 'Error fetching top quantity assets.' });
                 }
             } else {
