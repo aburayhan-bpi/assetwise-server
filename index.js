@@ -936,7 +936,7 @@ async function run() {
         app.get('/limited-stock-assets', async (req, res) => {
             const email = req.query.email;
             const query = { email: email, productQuantity: { $lt: 10 } };
-            console.log('Limited stock my email:', email)
+            // console.log('Limited stock my email:', email)
 
             if (email) {
                 const result = await assetsCollection.find(query).toArray()
@@ -948,10 +948,36 @@ async function run() {
             }
         });
 
+        // top quantity assets
+        app.get('/top-quantity-assets', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+
+            // console.log('Top quantity assets for email:', email);
+
+            if (email) {
+                try {
+                    const result = await assetsCollection
+                        .find(query)
+                        .sort({ productQuantity: -1 })
+                        .limit(10)
+                        .toArray();
+                    console.log("top quantity assets:", result)
+                    res.send(result);
+                } catch (error) {
+                    console.error(error);
+                    res.status(500).send({ message: 'Error fetching top quantity assets.' });
+                }
+            } else {
+                res.status(404).send({ message: 'Email is required or something went wrong.' });
+            }
+        });
+
+
         // product type state
         app.get('/product-type-state', async (req, res) => {
             const email = req.query.email;
-            console.log('Pi State: ', email)
+            // console.log('Pi State: ', email)
             const returnQuery = {
                 requesterAffiliatedWith: email, productType: 'returnable'
             };
@@ -964,8 +990,8 @@ async function run() {
             const returnableAssets = await requestedAssetCollection.find(returnQuery).toArray()
 
             const nonReturnableAssets = await requestedAssetCollection.find(nonReturnQuery).toArray()
-            console.log('returnable items: ', returnableAssets)
-            console.log('non-returnable items: ', nonReturnableAssets)
+            // console.log('returnable items: ', returnableAssets)
+            // console.log('non-returnable items: ', nonReturnableAssets)
 
             // calculate counts
             const returnableCount = returnableAssets.length;
