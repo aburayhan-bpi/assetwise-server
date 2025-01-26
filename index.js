@@ -992,6 +992,17 @@ async function run() {
         });
 
 
+        // fetch rejected asset requests
+        app.get('/rejected-requests', async (req, res) => {
+            const email = req.query.email;
+            const query = { requesterAffiliatedWith: email, status: 'rejected' }
+            if (!email) {
+                res.status(404).send({ message: 'Not found. Email is required.' })
+            }
+            const result = await requestedAssetCollection.find(query).toArray()
+            res.send(result)
+        });
+
 
 
 
