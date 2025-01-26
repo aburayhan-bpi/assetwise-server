@@ -106,6 +106,35 @@ async function run() {
             res.send(result)
         });
 
+        // update user name to db
+        app.patch('/update-name/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const newName = req.query.newName;
+            console.log('user id:', id)
+            console.log('user new name:', newName)
+            const query = { _id: new ObjectId(id) };
+            try {
+                if (id && newName) {
+                    const result = await usersCollection.updateOne(
+                        query,
+                        { $set: { name: newName } }
+                    )
+                    if (result.acknowledged && result.modifiedCount > 0) {
+                        console.log(result)
+                        res.send(result);
+                    }
+                } else {
+                    res.status(400).send({ message: 'Failed to update name.' })
+                }
+            } catch (err) {
+                console.log(err);
+                res.status(500).send({ message: 'Something went wrong while updating user name.' });
+            }
+        });
+
+
+
+
         // get current user
         app.get('/current-user', async (req, res) => {
             const email = req.query.email;
@@ -292,6 +321,7 @@ async function run() {
         // 
 
 
+        // add or save employee to db
         app.post('/add-employee', async (req, res) => {
             const { empId, email } = req.body; // HR email and Employee ID
 
