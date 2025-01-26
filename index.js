@@ -557,13 +557,11 @@ async function run() {
 
         // get my hr assets
         app.get('/my-hr-assets', verifyToken, async (req, res) => {
-            const searchQuery = req.query?.search;
-            const filterOption = req.query?.filterOption;
-            const email = req.query.email; // Get the email from the query
+            // const searchQuery = req.query?.search;
+            // const filterOption = req.query?.filterOption;
+            // const email = req.query.email; // Get the email from the query
+            const { email, searchQuery, filterOption } = req.query;
 
-            // console.log("Search Query:", searchQuery);
-            // console.log("Filter Option:", filterOption);
-            // console.log("Email:", email);
 
             let cursor;
             try {
@@ -588,9 +586,6 @@ async function run() {
                 // console.error("Error fetching assets:", err);
                 res.status(500).send({ error: "Failed to fetch assets" });
             }
-
-            // const result = await assetsCollection.find({ email: email }).toArray()
-            // res.send(result)
         });
 
         // request for an asset - (For AffiliatedWith Employees)
