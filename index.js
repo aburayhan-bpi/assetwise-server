@@ -103,7 +103,7 @@ async function run() {
             const ifExists = await usersCollection.findOne(query);
             if (ifExists) {
                 // return res.status(403).send({ message: 'Employee already exists!', insertedId: null })
-                return;
+                return res.send(ifExists);
             }
             const result = await usersCollection.insertOne(employeeInfo);
             res.send(result)
@@ -141,8 +141,10 @@ async function run() {
         // get current user
         app.get('/current-user', async (req, res) => {
             const email = req.query.email;
+            console.log('current user email: ', email)
             const query = { email: email };
             const result = await usersCollection.findOne(query);
+            console.log(result)
             res.send(result)
         });
 
