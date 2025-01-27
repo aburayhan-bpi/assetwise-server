@@ -18,6 +18,9 @@ app.use(
         origin: [
             "http://localhost:5173",
             "http://localhost:5000",
+            "https://assetwise-server.vercel.app",
+            "https://assetwise-b85cb.web.app",
+            "https://assetwise-b10a12.netlify.app"
         ],
         credentials: true,
     })
@@ -475,7 +478,7 @@ async function run() {
         });
 
         // get company info or logo for affiliatedWith employe
-        app.get('/company-info', verifyToken, async (req, res) => {
+        app.get('/company-info', async (req, res) => {
             const email = req.query.email;
             // console.log(email)
 
@@ -1200,8 +1203,8 @@ async function run() {
 
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
