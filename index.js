@@ -1116,7 +1116,7 @@ async function run() {
         };
         res.send({ empStats });
       } catch (error) {
-        res.status(500).send({ message: "Something went wrong, try again." });
+        res.status(500).send({ message: "Something went wrong, try again later." });
       }
     });
 
