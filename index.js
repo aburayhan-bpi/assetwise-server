@@ -784,12 +784,10 @@ async function run() {
 
     // fetch hr team users all requests
     app.get("/all-requests", verifyToken, async (req, res) => {
-      // const hrEmail = req.query.email; // Email of the user requesting the data
-      // const searchQuery = req.query.search;
+     
       const { hrEmail, searchQuery, sortOption } = req.query;
       console.log("all request search query: ", searchQuery);
-      // console.log('search text', searchQuery);
-      // console.log('searched email', hrEmail);
+  
 
       // let cursor;
       try {
