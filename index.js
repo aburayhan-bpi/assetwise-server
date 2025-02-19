@@ -813,7 +813,7 @@ async function run() {
         res.send(result);
       } catch (err) {
         // console.log(err);
-        res.status(404).send({ message: "Requested assets not found." });
+        res.status(404).send({ message: "Requested assets not found, try again." });
       }
     });
 
