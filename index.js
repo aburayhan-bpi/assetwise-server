@@ -1074,7 +1074,49 @@ async function run() {
         res.send({ hrStats });
       } catch (error) {
         // console.log(error);
-        res.status(404).send({ message: "Something went wrong, try again." });
+        res.status(500).send({ message: "Something went wrong, try again." });
+      }
+    });
+
+    // Employee statistics API
+    app.get("/emp-statistics", async (req, res) => {
+      const empEmail = req.query?.empEmail;
+      console.log("Employee email: ", empEmail);
+      try {
+        if (!empEmail) {
+          return res
+            .status(404)
+            .send({ message: "Employee email is required." });
+        }
+        // Queries
+        const requestedQuery = { requesterEmail: empEmail };
+
+        // Fetching data
+        const requestedData = await requestedAssetCollection
+          .find(requestedQuery)
+          .toArray();
+
+        const pending = requestedData.filter(
+          (data) => data.status === "pending"
+        );
+        const approved = requestedData.filter(
+          (data) => data.status === "approved"
+        );
+
+        //   Store in variable
+        const requestedAssets = requestedData.length;
+        const pendingAssets = pending.length;
+        const approvedAssets = approved.length;
+
+        console.log(requestedAssets, pendingAssets, approvedAssets);
+        const empStats = {
+          requestedAssets: requestedAssets,
+          pendingAssets: pendingAssets,
+          approvedAssets: approvedAssets,
+        };
+        res.send({ empStats });
+      } catch (error) {
+        res.status(500).send({ message: "Something went wrong, try again." });
       }
     });
 
