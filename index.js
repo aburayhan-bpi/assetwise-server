@@ -944,7 +944,7 @@ async function run() {
           // console.error(error);
           res
             .status(500)
-            .send({ message: "Error fetching top quantity assets." });
+            .send({ message: "Error fetching top quantity assets, try again." });
         }
       } else {
         res
