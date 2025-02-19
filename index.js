@@ -1074,14 +1074,14 @@ async function run() {
         res.send({ hrStats });
       } catch (error) {
         // console.log(error);
-        res.status(500).send({ message: "Something went wrong, try again." });
+        res.status(500).send({ message: "Something went wrong, try again later." });
       }
     });
 
     // Employee statistics API
     app.get("/emp-statistics", async (req, res) => {
       const empEmail = req.query?.empEmail;
-      console.log("Employee email: ", empEmail);
+    //   console.log("Employee email: ", empEmail);
       try {
         if (!empEmail) {
           return res
