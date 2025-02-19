@@ -203,49 +203,6 @@ async function run() {
       }
     });
 
-    // get / fetch all asset
-    // app.get('/assets', verifyToken, async (req, res) => {
-    //     const searchQuery = req.query?.search;
-    //     const filterOption = req.query?.filterOption;
-    //     const sortOption = req.query?.sortOption;
-    //     const email = req.query?.email; // Get the email from the query
-
-    //     let cursor;
-
-    //     try {
-    //         const query = email ? { email } : {}; // Filter by email if provided
-    //         if (searchQuery) {
-    //             query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
-    //         }
-
-    //         if (filterOption === 'available') {
-    //             query.productQuantity = { $gt: 0 }; // Products with quantity greater than 0
-    //         } else if (filterOption === 'stock-out') {
-    //             query.productQuantity = 0; // Products with quantity greater than 0
-    //         } else if (filterOption) {
-    //             query.productType = filterOption; // Add filter condition
-    //         }
-
-    //         // if (available === 'true') {
-    //         // } else if (stockout === 'true') {
-    //         //     query.productQuantity = 0; // Products with quantity equal to 0
-    //         // }
-
-    //         cursor = assetsCollection.find(query);
-
-    //         if (sortOption === 'asc') {
-    //             cursor = cursor.sort({ productQuantity: 1 });
-    //         } else if (sortOption === 'desc') {
-    //             cursor = cursor.sort({ productQuantity: -1 });
-    //         }
-
-    //         const result = await cursor.toArray();
-    //         res.send(result);
-    //     } catch (err) {
-    //         // console.error("Error fetching assets:", err);
-    //         res.status(500).send({ error: "Failed to fetch assets" });
-    //     }
-    // });
     app.get("/assets", verifyToken, async (req, res) => {
       const { search, filterOption, sortOption, email } = req.query;
 
@@ -825,43 +782,6 @@ async function run() {
     //
     //
 
-    // app.get('/all-requests', verifyToken, async (req, res) => {
-    //     const searchQuery = req.query?.search;
-    //     const filterOption = req.query?.filterOption;
-    //     const email = req.query.email; // Get the email from the query
-
-    //     console.log("Search Query:", searchQuery);
-    //     console.log("Filter Option:", filterOption);
-    //     console.log("Email:", email);
-
-    //     let cursor;
-    //     try {
-    //         const query = email ? { requestedEmail: email } : {}; // Filter by email if provided
-    //         if (searchQuery) {
-    //             query.productName = { $regex: searchQuery, $options: 'i' }; // Add search condition
-    //         }
-
-    //         if (filterOption === 'pending') {
-    //             query.status = 'pending';
-    //         } else if (filterOption === 'approved') {
-    //             query.status = 'approved';
-    //         } else if (filterOption) {
-    //             query.productType = filterOption;
-    //         }
-
-    //         cursor = requestedAssetCollection.find(query);
-
-    //         const result = await cursor.toArray();
-    //         res.send(result);
-    //     } catch (err) {
-    //         console.error("Error fetching assets:", err);
-    //         res.status(500).send({ error: "Failed to fetch assets" });
-    //     }
-
-    //     // const result = await assetsCollection.find({ email: email }).toArray()
-    //     // res.send(result)
-    // });
-
     // fetch hr team users all requests
     app.get("/all-requests", verifyToken, async (req, res) => {
       // const hrEmail = req.query.email; // Email of the user requesting the data
@@ -1088,6 +1008,76 @@ async function run() {
       res.send(percentages);
     });
 
+    // DASHBOARD API'S HERE...
+    app.get("/hr-statistics", verifyToken, async (req, res) => {
+      const hrEmail = req.query?.hrEmail;
+      //   console.log(hrEmail);
+
+      try {
+        if (!hrEmail) {
+          res.status(404).send({ message: "HR Email is required." });
+        }
+        // Queries
+        const query = { email: hrEmail || "" };
+        const reqQuery = {
+          requesterAffiliatedWith: hrEmail || "",
+        };
+        const affiliatedQuery = {
+          affiliatedWith: hrEmail || "",
+        };
+        const myPackageQuery = { email: hrEmail || "" };
+
+        const returnQuery = {
+          email: hrEmail,
+          productType: "returnable",
+        };
+        const nonReturnQuery = {
+          email: hrEmail,
+          productType: "non-returnable",
+        };
+        // Fetching data
+        const addedAssets = await assetsCollection.find(query).toArray();
+        const requestedAsset = await requestedAssetCollection
+          .find(reqQuery)
+          .toArray();
+        const myTeam = await usersCollection.find(affiliatedQuery).toArray();
+        const myPackage = await usersCollection.findOne(myPackageQuery);
+        const returnableAssets = await assetsCollection
+          .find(returnQuery)
+          .toArray();
+
+        const nonReturnableAssets = await assetsCollection
+          .find(nonReturnQuery)
+          .toArray();
+
+        //   make variable for fetched data
+        const totalAddedAssets = addedAssets.length;
+        const totalRequested = requestedAsset.length;
+        const myTeamMembers = myTeam.length;
+        const returnableCount = returnableAssets.length;
+        const nonReturnableCount = nonReturnableAssets.length;
+
+        // make object
+        const hrStats = {
+          totalAddedAssets: totalAddedAssets,
+          totalRequested: totalRequested,
+          myTeamMembers: myTeamMembers,
+          myPackage: {
+            limit: myPackage?.limit,
+            package: myPackage?.package,
+          },
+          returnableCount: returnableCount,
+          nonReturnableCount: nonReturnableCount,
+        };
+
+        // console.log(hrStats);
+        res.send({ hrStats });
+      } catch (error) {
+        // console.log(error);
+        res.status(404).send({ message: "Something went wrong, try again." });
+      }
+    });
+
     // fetch rejected asset requests
     app.get("/rejected-requests", async (req, res) => {
       const email = req.query.email;
@@ -1098,32 +1088,6 @@ async function run() {
       const result = await requestedAssetCollection.find(query).toArray();
       res.send(result);
     });
-
-    // // save employee to db
-    // app.post('/employee', async (req, res) => {
-    //     const employeeInfo = req.body;
-    //     const query = { email: employeeInfo?.email }
-
-    //     const ifExists = await employeeCollection.findOne(query);
-    //     if (ifExists) {
-    //         // return res.status(403).send({ message: 'Employee already exists!', insertedId: null })
-    //         return;
-    //     }
-    //     const result = await employeeCollection.insertOne(employeeInfo);
-    //     res.send(result)
-    // });
-
-    // // save hr to db
-    // app.post('/hr', async (req, res) => {
-    //     const hrInfo = req.body;
-    //     const query = { email: hrInfo?.email };
-    //     const ifExists = await hrCollection.findOne(query);
-    //     if (ifExists) {
-    //         return res.status(403).send({ message: 'Already exists!', insertedId: null })
-    //     }
-    //     const result = await hrCollection.insertOne(hrInfo);
-    //     res.send(result);
-    // });
 
     // payment intent
     app.post("/create-payment-intent", async (req, res) => {
